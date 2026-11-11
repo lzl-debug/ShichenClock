@@ -69,8 +69,8 @@ namespace ShichenClock {
             }
             d=context;double blend=Math.Max(0,Math.Min(1,DockBlend));d.PushOpacity(1-blend);d.DrawDrawing(cached);d.Pop();
             if(blend>0&&!String.IsNullOrEmpty(HiddenEdge)) {d.PushOpacity(blend);
-                if(HiddenEdge=="Left"||HiddenEdge=="Right") {double x=HiddenEdge=="Left"?339:8;Box(x,133,13,74,6,t.Bg,t.Muted,.7);Line(x+6.5,156,x+6.5,184,t.Accent,2);}
-                else {double y=HiddenEdge=="Top"?319:8;Box(143,y,74,13,6,t.Bg,t.Muted,.7);Line(166,y+6.5,194,y+6.5,t.Accent,2);}d.Pop();
+                if(HiddenEdge=="Left"||HiddenEdge=="Right") {double x=HiddenEdge=="Left"?346:10;Box(x,133,4,74,1.5,t.Accent);}
+                else {double y=HiddenEdge=="Top"?326:10;Box(143,y,74,4,1.5,t.Accent);}d.Pop();
             }
         }
         private void Orbit() {

@@ -30,6 +30,7 @@ namespace ShichenClock {
         private Forms.NotifyIcon tray;
         private string settingsPath;
         private string edge="";
+        private string savedEdge="";
         private bool tucked,dragging,autoHide=true,menuOpen;
         private bool closing;
         private DateTime lastInside=DateTime.UtcNow;
@@ -68,7 +69,7 @@ namespace ShichenClock {
             root.Children.Add(toolbar); view.Child=root; Content=view;
             MouseLeftButtonDown+=StartDrag;
             MouseRightButtonUp+=(s,e)=>ShowMenu(null);
-            PreviewKeyDown+=(s,e)=>{ if(e.Key==Key.Escape){ Reveal(true); edge=""; SaveSettings(); } if(e.Key==Key.T)OpenChooser(); if(e.Key==Key.Left)SetTheme((face.Theme+ThemeInfo.All.Length-1)%ThemeInfo.All.Length); if(e.Key==Key.Right)SetTheme((face.Theme+1)%ThemeInfo.All.Length); };
+            PreviewKeyDown+=(s,e)=>{ if(e.Key==Key.Escape){ Reveal(true); edge=""; root.Clip=null; SaveSettings(); } if(e.Key==Key.T)OpenChooser(); if(e.Key==Key.Left)SetTheme((face.Theme+ThemeInfo.All.Length-1)%ThemeInfo.All.Length); if(e.Key==Key.Right)SetTheme((face.Theme+1)%ThemeInfo.All.Length); };
             SourceInitialized+=(s,e)=>{
                 hwnd=new WindowInteropHelper(this).Handle;
                 new WindowInteropHelper(this).EnsureHandle();
@@ -105,6 +106,7 @@ namespace ShichenClock {
                 if(kv.ContainsKey("theme")&&Int32.TryParse(kv["theme"],out n)&&n>=0&&n<ThemeInfo.All.Length)face.Theme=n;
                 if(kv.ContainsKey("topmost"))Topmost=kv["topmost"]=="True";
                 if(kv.ContainsKey("autoHide"))autoHide=kv["autoHide"]=="True";
+                if(kv.ContainsKey("edge")&&new[]{"Left","Right","Top","Bottom"}.Contains(kv["edge"]))savedEdge=kv["edge"];
                 if(kv.ContainsKey("scale")&&Double.TryParse(kv["scale"],System.Globalization.NumberStyles.Float,System.Globalization.CultureInfo.InvariantCulture,out v)&&v>=.75&&v<=1.4){scale=v;Width=360*scale;Height=340*scale;}
                 if(kv.ContainsKey("left")&&Double.TryParse(kv["left"],System.Globalization.NumberStyles.Float,System.Globalization.CultureInfo.InvariantCulture,out v)&&!Double.IsInfinity(v)&&!Double.IsNaN(v))savedLeft=v;
                 if(kv.ContainsKey("top")&&Double.TryParse(kv["top"],System.Globalization.NumberStyles.Float,System.Globalization.CultureInfo.InvariantCulture,out v)&&!Double.IsInfinity(v)&&!Double.IsNaN(v))savedTop=v;
@@ -114,6 +116,7 @@ namespace ShichenClock {
             if(tucked||moving||closing||verification)return;
             try {
                 string data="theme="+face.Theme+"\r\ntopmost="+Topmost+"\r\nautoHide="+autoHide+"\r\nscale="+scale.ToString(System.Globalization.CultureInfo.InvariantCulture)+"\r\nleft="+Left.ToString(System.Globalization.CultureInfo.InvariantCulture)+"\r\ntop="+Top.ToString(System.Globalization.CultureInfo.InvariantCulture)+"\r\n";
+                data+="edge="+edge+"\r\n";
                 File.WriteAllText(settingsPath+".tmp",data,Encoding.UTF8);
                 if(File.Exists(settingsPath))File.Replace(settingsPath+".tmp",settingsPath,null); else File.Move(settingsPath+".tmp",settingsPath);
             }catch(IOException) {}catch(UnauthorizedAccessException) {}
@@ -130,7 +133,7 @@ namespace ShichenClock {
         private void StartDrag(object sender,MouseButtonEventArgs e) {
             DependencyObject p=e.OriginalSource as DependencyObject;
             while(p!=null) {if(p is Button)return; p=VisualTreeHelper.GetParent(p);}
-            Reveal(true); dragging=true; edge="";
+            Reveal(true); dragging=true; edge="";root.Clip=null;
             try {DragMove();} catch(InvalidOperationException) {} finally {dragging=false; Snap(); SaveSettings();}
         }
         private void KeepVisible() {
@@ -143,21 +146,23 @@ namespace ShichenClock {
             if(hwnd==IntPtr.Zero)return;
             RECT r;GetWindowRect(hwnd,out r);var w=Forms.Screen.FromHandle(hwnd).WorkingArea;
             int threshold=(int)(24*r.Width/360.0);
-            int[] dist={Math.Abs(r.Left-w.Left),Math.Abs(w.Right-r.Right),Math.Abs(r.Top-w.Top),Math.Abs(w.Bottom-r.Bottom)};
+            int mx=DockGeometry.MarginX(ToRectangle(r)),my=DockGeometry.MarginY(ToRectangle(r));
+            int[] dist={Math.Abs(r.Left+mx-w.Left),Math.Abs(w.Right-r.Right+mx),Math.Abs(r.Top+my-w.Top),Math.Abs(w.Bottom-r.Bottom+my)};
             int nearest=0;for(int i=1;i<4;i++)if(dist[i]<dist[nearest])nearest=i;
+            int saved=Array.IndexOf(new[]{"Left","Right","Top","Bottom"},savedEdge);
+            if(saved>=0&&dist[saved]<=threshold)nearest=saved;
+            savedEdge="";
             edge="";
             if(dist[nearest]<=threshold) {
                 edge=new[]{"Left","Right","Top","Bottom"}[nearest];
-                int x=r.Left,y=r.Top;
-                if(edge=="Left")x=w.Left;if(edge=="Right")x=w.Right-r.Width;
-                if(edge=="Top")y=w.Top;if(edge=="Bottom")y=w.Bottom-r.Height;
-                x=Math.Max(w.Left,Math.Min(x,w.Right-r.Width)); y=Math.Max(w.Top,Math.Min(y,w.Bottom-r.Height));
+                var target=DockGeometry.Expanded(edge,ToRectangle(r),w);
                 dockArea=w;
-                MoveTo(x,y,220,0,()=>{GetWindowRect(hwnd,out expanded);SaveSettings();});
+                MoveTo(target.X,target.Y,220,0,()=>{GetWindowRect(hwnd,out expanded);SaveSettings();});
                 lastInside=DateTime.UtcNow;return;
             }
-            GetWindowRect(hwnd,out expanded);lastInside=DateTime.UtcNow;
+            root.Clip=null;GetWindowRect(hwnd,out expanded);lastInside=DateTime.UtcNow;
         }
+        private static System.Drawing.Rectangle ToRectangle(RECT r) {return new System.Drawing.Rectangle(r.Left,r.Top,r.Width,r.Height);}
         private void DockTick() {
             if(hwnd==IntPtr.Zero||dragging||menuOpen||chooser!=null||String.IsNullOrEmpty(edge)||!autoHide)return;
             if(moving)return;
@@ -168,11 +173,11 @@ namespace ShichenClock {
             bool inside;
             if(tucked) {
                 double sx=r.Width/360.0,sy=r.Height/340.0;
-                double x=edge=="Left"?337:edge=="Right"?6:141;
-                double y=edge=="Top"?317:edge=="Bottom"?6:131;
-                double w=(edge=="Left"||edge=="Right")?17:78;
-                double h=(edge=="Left"||edge=="Right")?78:17;
-                inside=p.X>=r.Left+x*sx&&p.X<=r.Left+(x+w)*sx&&p.Y>=r.Top+y*sy&&p.Y<=r.Top+(y+h)*sy;
+                double x=edge=="Left"?344:edge=="Right"?8:141;
+                double y=edge=="Top"?324:edge=="Bottom"?8:131;
+                double w=(edge=="Left"||edge=="Right")?8:78;
+                double h=(edge=="Left"||edge=="Right")?78:8;
+                inside=dockArea.Contains(p.X,p.Y)&&p.X>=r.Left+x*sx&&p.X<=r.Left+(x+w)*sx&&p.Y>=r.Top+y*sy&&p.Y<=r.Top+(y+h)*sy;
             } else inside=p.X>=r.Left&&p.X<r.Right&&p.Y>=r.Top&&p.Y<r.Bottom;
             if(inside) {lastInside=DateTime.UtcNow;if(tucked)Reveal();}
             else if(!tucked&&(DateTime.UtcNow-lastInside).TotalMilliseconds>850)Tuck();
@@ -181,17 +186,14 @@ namespace ShichenClock {
             if(tucked)return;
             GetWindowRect(hwnd,out expanded); SaveSettings();
             dockArea=Forms.Screen.FromHandle(hwnd).WorkingArea;
-            int x=expanded.Left,y=expanded.Top;
-            int peekX=(int)Math.Round(28*expanded.Width/360.0),peekY=(int)Math.Round(28*expanded.Height/340.0);
-            if(edge=="Left")x-=expanded.Width-peekX;if(edge=="Right")x+=expanded.Width-peekX;
-            if(edge=="Top")y-=expanded.Height-peekY;if(edge=="Bottom")y+=expanded.Height-peekY;
+            var target=DockGeometry.Hidden(edge,ToRectangle(expanded),dockArea);
             tucked=true;face.HiddenEdge=edge;FadeTools(false);
-            MoveTo(x,y,360,1,null);
+            MoveTo(target.X,target.Y,360,1,null);
         }
         private void Reveal(bool immediately=false) {
             if(!tucked) {if(immediately&&moving)FinishMotion();return;}
             tucked=false;
-            MoveTo(expanded.Left,expanded.Top,300,0,()=>{face.HiddenEdge=null;root.Clip=null;lastInside=DateTime.UtcNow;SaveSettings();});
+            MoveTo(expanded.Left,expanded.Top,300,0,()=>{face.HiddenEdge=null;lastInside=DateTime.UtcNow;SaveSettings();});
             if(immediately)FinishMotion();
             lastInside=DateTime.UtcNow;
         }
@@ -202,7 +204,7 @@ namespace ShichenClock {
             motionDuration=milliseconds;moving=true;motionClock.Restart();CompositionTarget.Rendering+=MotionFrame;
         }
         private void ClipToWorkArea(int x,int y) {
-            if(String.IsNullOrEmpty(face.HiddenEdge)){root.Clip=null;return;}
+            if(String.IsNullOrEmpty(edge)){root.Clip=null;return;}
             double sx=360.0/motionFrom.Width,sy=340.0/motionFrom.Height;
             var visible=System.Drawing.Rectangle.Intersect(new System.Drawing.Rectangle(x,y,motionFrom.Width,motionFrom.Height),dockArea);
             root.Clip=new RectangleGeometry(new Rect((visible.Left-x)*sx,(visible.Top-y)*sy,Math.Max(0,visible.Width*sx),Math.Max(0,visible.Height*sy)));
@@ -229,7 +231,7 @@ namespace ShichenClock {
             if(requireFrames&&motionFrames<3)throw new Exception("Animation skipped intermediate frames");
         }
         private void BringBack() {
-            Reveal(true);edge="";KeepVisible();Show();Activate();lastInside=DateTime.UtcNow;SaveSettings();
+            Reveal(true);edge="";root.Clip=null;KeepVisible();Show();Activate();lastInside=DateTime.UtcNow;SaveSettings();
         }
         public void SetTheme(int index) {Reveal(true);face.Theme=index;face.InvalidateVisual();RefreshButtons();SaveSettings();}
         private MenuItem Item(string label,Action action) {var i=new MenuItem {Header=label};i.Click+=(s,e)=>action();return i;}
@@ -249,10 +251,9 @@ namespace ShichenClock {
         }
         private void DockAt(int side) {
             Reveal(true);RECT r;GetWindowRect(hwnd,out r);var w=Forms.Screen.FromHandle(hwnd).WorkingArea;
-            int x=r.Left,y=r.Top;if(side==0)x=w.Left;if(side==1)x=w.Right-r.Width;if(side==2)y=w.Top;if(side==3)y=w.Bottom-r.Height;
-            x=Math.Max(w.Left,Math.Min(x,w.Right-r.Width));y=Math.Max(w.Top,Math.Min(y,w.Bottom-r.Height));
             edge=new[]{"Left","Right","Top","Bottom"}[side];dockArea=w;
-            MoveTo(x,y,260,0,()=>{GetWindowRect(hwnd,out expanded);SaveSettings();});
+            var target=DockGeometry.Expanded(edge,ToRectangle(r),w);
+            MoveTo(target.X,target.Y,260,0,()=>{GetWindowRect(hwnd,out expanded);SaveSettings();});
         }
         public void VerifyDesktop() {
             var report=new List<string>();
@@ -264,15 +265,20 @@ namespace ShichenClock {
                     DockAt(side);WaitForMotion();string expected=new[]{"Left","Right","Top","Bottom"}[side];
                     if(edge!=expected)throw new Exception("Dock selection failed: "+expected);
                     RECT before;GetWindowRect(hwnd,out before);
+                    int mx=DockGeometry.MarginX(ToRectangle(before)),my=DockGeometry.MarginY(ToRectangle(before));
+                    int gap=side==0?before.Left+mx-dockArea.Left:side==1?dockArea.Right-before.Right+mx:side==2?before.Top+my-dockArea.Top:dockArea.Bottom-before.Bottom+my;
+                    if(gap!=0)throw new Exception("Visible face is not flush: "+expected+" gap="+gap);
                     lastInside=DateTime.UtcNow.AddSeconds(-2);EvaluatePointer(new POINT {X=before.Left-1000,Y=before.Top-1000});
                     if(!tucked)throw new Exception("Auto-hide failed: "+expected);
                     WaitForMotion();if(Math.Abs(face.DockBlend-1)>.001)throw new Exception("Handle blend failed");
                     RECT hidden;GetWindowRect(hwnd,out hidden);
                     if(hidden.Left==before.Left&&hidden.Top==before.Top)throw new Exception("Native window did not hide");
-                    int x=side==0?345:side==1?14:180;int y=side==2?325:side==3?14:170;
-                    EvaluatePointer(new POINT {X=hidden.Left+(int)(x*hidden.Width/360.0),Y=hidden.Top+(int)(y*hidden.Height/340.0)});
+                    // The outermost physical screen pixel must reveal the clock, without searching for an inset handle.
+                    int x=side==0?dockArea.Left:side==1?dockArea.Right-1:hidden.Left+hidden.Width/2;
+                    int y=side==2?dockArea.Top:side==3?dockArea.Bottom-1:hidden.Top+hidden.Height/2;
+                    EvaluatePointer(new POINT {X=x,Y=y});
                     if(tucked)throw new Exception("Hover reveal failed: "+expected);
-                    WaitForMotion();if(face.DockBlend!=0||root.Clip!=null)throw new Exception("Reveal visual state failed");
+                    WaitForMotion();if(face.DockBlend!=0||root.Clip==null)throw new Exception("Reveal visual state failed");
                     RECT after;GetWindowRect(hwnd,out after);
                     if(before.Left!=after.Left||before.Top!=after.Top||before.Width!=after.Width||before.Height!=after.Height)throw new Exception("Restore position mismatch: "+expected);
                     report.Add("PASS: "+expected+" / scale "+value+" / animated snap, auto-hide, hover reveal ("+motionFrames+" frames), restored bounds "+after.Width+"x"+after.Height);
