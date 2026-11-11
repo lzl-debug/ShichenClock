@@ -1,0 +1,19 @@
+# Build output and local preferences
+*.exe
+*.pdb
+settings.ini
+settings.ini.tmp
+error.log
+
+# Generated verification output and previous local versions
+/test-results.txt
+/desktop-test-results.txt
+/verification/
+/previous-v1/
+
+# Optional development dependencies
+node_modules/
+.vs/
+bin/
+obj/
+*.user
