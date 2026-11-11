@@ -11,11 +11,11 @@
 <body>
 <header>
   <div class="topline"><span class="brand">拾辰 / SHICHEN</span><span class="live" id="live">北京时间 · 十二时辰</span></div>
-  <div class="intro"><div><h1>十六种时间的样子。</h1><p class="sub">把一天，交还给子丑寅卯。<br>十六套独立设计，一个安静待在桌面边缘的小钟。</p></div><aside><strong>桌面时钟已备好</strong>双击同文件夹中的 ShichenClock.exe<br>点击时钟右上角 ◈，随时更换外观。</aside></div>
+  <div class="intro"><div><h1>十六种时间的样子。</h1><p class="sub">把一天，交还给子丑寅卯。<br>十六种视觉语言，让十二消息卦随时辰流转。</p></div><aside><strong>桌面时钟已备好</strong>双击同文件夹中的 ShichenClock.exe<br>点击时钟右上角 ◈，随时更换外观。</aside></div>
   <div class="strip"><span><b>16</b> 套原创外观</span><span><b>4</b> 边吸附隐藏</span><span>缓动收起 · 移入展开</span><span>离线运行 · 北京时间 · 原生桌面</span></div>
 </header>
 <main>
-  <p style="margin:30px 0 0;font-size:14px"><a href="动态表盘预览.html" style="color:inherit">↗ 试玩新款：游针 &amp; 流转 · 加速看完一天</a></p><p style="margin:12px 0 0;font-size:14px"><a href="易象预览.html" style="color:inherit">↗ 新增：消息 &amp; 玄枢 · 拖动时间看懂十二消息卦</a></p><div class="grid" id="grid"></div>
+  <p style="margin:30px 0 0;font-size:14px"><a href="动态表盘预览.html" style="color:inherit">↗ 试玩新款：游针 &amp; 流转 · 加速看完一天</a></p><p style="margin:12px 0 0;font-size:14px"><a href="易象预览.html" style="color:inherit">↗ 全系列融入卦象 · 拖动时间看懂十二消息卦</a></p><div class="grid" id="grid"></div>
   <section class="guide" aria-label="使用说明">
     <div><h2>拖到边缘，自动收起</h2><p>按住时钟主体拖动。靠近屏幕任意一边时会吸附；鼠标移开约 0.85 秒后收起，只留一个小拉手。鼠标移到拉手，时钟约 0.3 秒平滑滑出；收起约 0.36 秒，并渐变成拉手。</p></div>
     <div><h2>你的外观，你的大小</h2><p>点击 <kbd>◈</kbd> 挑选外观；点击 <kbd>●</kbd> 切换置顶；点击 <kbd>⋯</kbd> 调整大小、关闭自动隐藏或退出。样式、大小和位置会自动记住。</p></div>
@@ -26,20 +26,20 @@
 <dialog id="detail" aria-labelledby="detail-title"><button class="close" aria-label="关闭预览">×</button><img id="detail-image" alt=""><h2 id="detail-title"></h2><p id="detail-desc"></p><div class="preview-note">在桌面时钟中点击 ◈，选择这套外观。</div></dialog>
 <script>
 const themes=[
- ["临界","冷光科技 · 悬浮轨道"],
- ["天青","当代东方 · 青瓷釉色"],
- ["留白","宣纸书卷 · 墨字与朱印"],
- ["绛色","东方漆器 · 酒红与淡金"],
- ["苔息","自然静谧 · 林间光影"],
- ["月背","深空月相 · 银蓝光晕"],
- ["慢频","复古工业 · 翻页计时器"],
- ["蓝调","平面构成 · 克莱因蓝"],
- ["点阵","数字像素 · 紫色微光"],
- ["无相","纯白极简 · 悬浮圆盘"],
- ["刻度","精密腕表 · 石墨与玫瑰金"],
- ["浮光","柔和流体 · 杏桃与香芋"],
- ["游针","地支指针 · 一日一周"],
- ["流转","环形时辰 · 逐格流动"],
+ ["临界","冷光科技 · 六爻扫描"],
+ ["天青","青瓷釉色 · 阴阳刻纹"],
+ ["留白","宣纸书卷 · 墨爻朱印"],
+ ["绛色","东方漆器 · 六爻金弧"],
+ ["苔息","林间叶序 · 六爻生息"],
+ ["月背","银蓝月盘 · 阴阳镂影"],
+ ["慢频","机械翻页 · 六爻分屏"],
+ ["蓝调","克莱因蓝 · 卦象构成"],
+ ["点阵","紫色像素 · 点阵六爻"],
+ ["无相","纯白浮雕 · 静默卦象"],
+ ["刻度","精密腕表 · 玫瑰金爻"],
+ ["浮光","杏桃香芋 · 悬浮爻线"],
+ ["游针","地支指针 · 十二卦刻度"],
+ ["流转","环形时辰 · 十二卦流转"],
  ["消息","六爻时序 · 一时一卦"],
  ["玄枢","先天八卦 · 环行十二辰"]
 ];

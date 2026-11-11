@@ -3,36 +3,39 @@
 <style>
 *{box-sizing:border-box}body{margin:0;background:#e6e9eb;color:#34443f;font-family:"Microsoft YaHei UI",sans-serif}main{max-width:980px;margin:auto;padding:40px 28px}a{color:inherit;font-size:12px;text-decoration:none}h1{font-size:34px;font-weight:400;letter-spacing:2px;margin:28px 0 12px}p{font-size:13px;line-height:1.9;color:#75817c}.clocks{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin:30px 0}.clocks svg{width:100%;height:auto;display:block}.controls{background:#f4f5f2;border-radius:18px;padding:22px 26px;display:flex;align-items:center;gap:22px;flex-wrap:wrap}button{background:#34443f;color:#f2f2e9;border:0;border-radius:10px;padding:12px 18px;cursor:pointer;font:inherit;font-size:12px;min-width:100px}button.secondary{color:#34443f;background:#e2e7df}button:focus-visible,input:focus-visible{outline:3px solid #90a8a0;outline-offset:4px}input{flex:1;min-width:160px;accent-color:#738779;cursor:pointer}output{font-family:"Segoe UI",sans-serif;font-variant-numeric:tabular-nums;font-size:22px;min-width:125px}footer{font-size:11px;color:#89938f;margin-top:20px;line-height:1.8}.legend{display:flex;justify-content:space-between;gap:25px}.legend p{flex:1;margin:0}.subtitle{margin:0}@media(max-width:620px){main{padding:24px 16px}.clocks{gap:10px}.controls{padding:16px;gap:12px}h1{font-size:28px}.legend p{font-size:11px}.clocks text{font-family:"Microsoft YaHei UI",sans-serif}}@media(max-width:400px){.clocks{grid-template-columns:1fr}.legend{flex-direction:column}}
 </style></head><body><main>
-<a href="风格预览.html">← 全部 16 款外观</a><h1>让时间，走给你看。</h1><p class="subtitle">拖动一天，观察指针与时辰环；也可以用 24 秒，看完 24 小时。</p>
+<a href="风格预览.html">← 全部 16 款外观</a><h1>十二卦，也可以是刻度。</h1><p class="subtitle">游针把十二消息卦放上刻度，流转让它们随时辰逐格亮起。拖动时间，或用 24 秒看完一天。</p>
 <div class="clocks"><svg id="hands" viewBox="0 0 360 340" role="img" aria-label="游针：24小时指针表盘"></svg><svg id="cycle" viewBox="0 0 360 340" role="img" aria-label="流转：十二时辰分段环形表盘"></svg></div>
-<div class="legend"><p>游针 / 短针每天一圈，长针每小时一圈。十二地支对应各时辰的中点。</p><p>流转 / 每格两小时。亮色向前填充，暗色等待到来；23:00 开启新一轮。</p></div>
+<div class="legend"><p>游针 / 十二消息卦对应十二个时辰刻度，当前卦以铜色高亮。短针每天一圈，长针每小时一圈；上方为子时中点 00:00。</p><p>流转 / 每格两小时，并刻有对应消息卦，上爻朝外、初爻朝内。亮色填充当前时辰；23:00 开启新一轮。</p></div>
 <div class="controls" style="margin-top:26px"><button id="play">加速播放</button><input type="range" id="time" min="0" max="1439" step="1" value="1058" aria-label="北京时间，从00:00到23:59"><output id="readout" aria-live="off"></output><button class="secondary" id="now">此刻</button></div>
 <footer>这是独立的交互演示，不修改系统时间和桌面时钟。桌面版始终按北京时间运行。此页面展示表盘运动，最终外观以桌面版为准。</footer>
 </main><script>
 const names='子丑寅卯辰巳午未申酉戌亥'.split(''),colors=['#ab9fe0','#a29cde','#9ba9e8','#92b6df','#8dc6d1','#92c9bd','#b0cca8','#d0c4a2','#d2b09c','#cea2b4','#bc9bd1','#b29ddb'];
+const gua=['复','临','泰','大壮','夬','乾','姤','遁','否','观','剥','坤'],bits=[1,3,7,15,31,63,62,60,56,48,32,0],images=['地雷复','地泽临','地天泰','雷天大壮','泽天夬','乾为天','天风姤','天山遁','天地否','风地观','山地剥','坤为地'];
 const hands=document.getElementById('hands'),cycle=document.getElementById('cycle'),slider=document.getElementById('time'),play=document.getElementById('play'),readout=document.getElementById('readout');
 let minutes=1058,playing=false,last=0,frame=0;
 function point(r,deg){const a=deg*Math.PI/180;return [180+r*Math.cos(a),166+r*Math.sin(a)]}
 function text(s,x,y,size,fill,anchor='middle',family='DengXian,Microsoft YaHei UI,sans-serif'){return `<text x="${x}" y="${y}" font-size="${size}" fill="${fill}" text-anchor="${anchor}" font-family="${family}">${s}</text>`}
 function line(a,b,color,width){return `<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="${color}" stroke-width="${width}" stroke-linecap="round"/>`}
 function sector(start,sweep,fill,opacity=1){if(sweep<.001)return '';const a=point(97,start),b=point(97,start+sweep),c=point(72,start+sweep),d=point(72,start);return `<path d="M${a} A97 97 0 0 1 ${b} L${c} A72 72 0 0 0 ${d} Z" fill="${fill}" opacity="${opacity}"/>`}
+function hexagram(i,x,y,rotation,current,light,dark){let s=`<g class="hexagram" data-index="${i}" data-bits="${bits[i]}" data-current="${current}" transform="rotate(${rotation} ${x} ${y})">`;for(let row=0;row<6;row++){const yang=!!(bits[i]&(1<<(5-row))),top=y-7+row*2.6,c=yang?light:dark;s+=`<g data-line="${5-row}" data-yang="${yang}">`;if(yang)s+=`<rect x="${x-8}" y="${top}" width="16" height="1.2" rx=".4" fill="${c}"/>`;else for(const left of [x-8,x+1.44])s+=`<rect x="${left}" y="${top}" width="6.56" height="1.2" rx=".4" fill="${c}"/>`;s+='</g>'}return s+'</g>'}
 function draw(){
  const hour=Math.floor(minutes/60),minute=Math.floor(minutes%60),index=Math.floor(((minutes+60)%1440)/120),progress=((minutes+60)%120)/120,time=`${String(hour).padStart(2,'0')}:${String(minute).padStart(2,'0')}`,detail=names[index]+(hour%2?'初':'正')+' · '+['初刻','一刻','二刻','三刻'][Math.floor(minute/15)];
  let a=`<defs><linearGradient id="paper" x2="0" y2="1"><stop stop-color="#f1f0e9"/><stop offset="1" stop-color="#dfe0d6"/></linearGradient></defs><rect x="10" y="10" width="340" height="320" rx="28" fill="url(#paper)"/>`;
  a+=text('游针',33,43,12,'#34443f','start')+text('MERIDIAN',33,58,8,'#8c9388','start');
- a+='<circle cx="182" cy="169" r="102" fill="#cfd2c7"/><circle cx="180" cy="166" r="102" fill="#f7f7ed"/>';
- for(let i=0;i<60;i++){const deg=i*6-90;a+=line(point(i%5?94:90,deg),point(97,deg),i%5?'#c5cbbd':'#859184',i%5?.7:1)}
- for(let i=0;i<12;i++){let p=point(78,i*30-90);a+=text(names[i],p[0],p[1]+4,12,i===index?'#b56f4f':'#34443f')}
- a+=text(names[index]+'时',180,142,17,'#34443f')+text('24 H',180,205,8,'#8c9388');
- a+=line(point(-8,minutes/4-90),point(48,minutes/4-90),'#34443f',4.5)+line(point(-12,(minutes%60)*6-90),point(69,(minutes%60)*6-90),'#b56f4f',2);
+ a+='<circle cx="182" cy="169" r="99" fill="#b8c4b6"/><circle cx="180" cy="166" r="99" fill="#f7f7ed"/>';
+ for(let i=0;i<60;i++){const deg=i*6-90;a+=line(point(i%5?92:88,deg),point(96,deg),i%5?'#bbc7b6':'#718775',i%5?.6:1)}
+ for(let i=0;i<12;i++){const p=point(76,i*30-90),label=point(115,i*30-90),selected=i===index;a+=hexagram(i,p[0],p[1],0,selected,selected?'#b56f4f':'#607964',selected?'#b56f4f':'#a0b19b')+text(names[i],label[0],label[1]+4,10,selected?'#b56f4f':'#718775')}
+ a+=text(names[index]+'时',180,144,15,'#34443f')+text(gua[index]+'卦',180,210,12,'#718775');
+ a+=line(point(-8,minutes/4-90),point(45,minutes/4-90),'#34443f',4)+line(point(-11,(minutes%60)*6-90),point(64,(minutes%60)*6-90),'#b56f4f',1.8);
  a+='<circle cx="180" cy="166" r="5" fill="#34443f"/><circle cx="180" cy="166" r="1.7" fill="#f8f2de"/>';
- a+=text(time,34,306,27,'#34443f','start','Segoe UI Light,sans-serif')+text('北京 · UTC+8',34,322,9,'#8c9388','start')+text('短针 · 时辰',261,296,10,'#34443f')+text('长针 · 分钟',261,318,10,'#8c9388');hands.innerHTML=a;
+ a+=text(time,34,311,26,'#34443f','start','Segoe UI Light,sans-serif')+text('北京 · UTC+8',34,325,8,'#718775','start')+text(images[index],271,305,12,'#34443f')+text('短针一天 · 长针一小时',270,323,8,'#718775');hands.innerHTML=a;
  let b=`<defs><linearGradient id="night" x2="0" y2="1"><stop stop-color="#263148"/><stop offset="1" stop-color="#161d2d"/></linearGradient></defs><rect x="10" y="10" width="340" height="320" rx="28" fill="url(#night)"/>`;
  b+=text('流转',33,43,12,'#e5eaf7','start')+text('CYCLE',33,58,8,'#98a6bf','start');
- for(let i=0;i<12;i++){b+=sector(i*30-103,26,'#323e56');if(i<index)b+=sector(i*30-103,26,colors[i],.52);if(i===index)b+=sector(i*30-103,26*progress,colors[i]);let p=point(113,i*30-90);b+=text(names[i],p[0],p[1]+4,10,i===index?'#e5eaf7':'#8f9eb9')}
- const cursor=point(84.5,index*30-103+26*progress);b+=`<circle cx="${cursor[0]}" cy="${cursor[1]}" r="4" fill="#e5eaf7"/>`;
- b+=text(names[index],180,169,56,'#e5eaf7')+text(detail,180,191,10,'#98a6bf')+text(Math.floor(progress*100)+'%',180,216,10,'#a9b9ef');
- b+=text(time,34,308,27,'#e5eaf7','start','Segoe UI Light,sans-serif')+text('北京 · UTC+8',34,324,9,'#98a6bf','start')+text('下一格 · '+names[(index+1)%12]+'时',270,299,10,'#e5eaf7')+text(Math.ceil((1-progress)*120)+' 分钟后',270,321,10,'#98a6bf');cycle.innerHTML=b;
+ for(let i=0;i<12;i++){b+=sector(i*30-103,26,'#35415a');if(i<index)b+=sector(i*30-103,26,colors[i],.52);if(i===index)b+=sector(i*30-103,26*progress,colors[i]);const p=point(84.5,i*30-90),label=point(113,i*30-90),selected=i===index;b+=hexagram(i,p[0],p[1],i*30,selected,selected?'#fcf3dd':'#c1cbe0',selected?'#f3decd':'#9daac7')+text(names[i],label[0],label[1]+4,10,selected?'#e5eaf7':'#98a6bf')}
+ const cursor=point(101,index*30-103+26*progress);b+=`<circle cx="${cursor[0]}" cy="${cursor[1]}" r="2.5" fill="#e5eaf7"/>`;
+ b+=text(names[index],180,159,44,'#e5eaf7')+text(gua[index]+'卦',180,190,18,'#a9b9ef')+text(detail,180,213,9,'#98a6bf')+text(Math.floor(progress*100)+'%',180,231,8,'#a9b9ef');
+ b+=text(time,34,308,27,'#e5eaf7','start','Segoe UI Light,sans-serif')+text('北京 · UTC+8',34,324,9,'#98a6bf','start')+text('下一卦 · '+gua[(index+1)%12],270,301,11,'#e5eaf7')+text(Math.ceil((1-progress)*120)+' 分钟后',270,323,10,'#98a6bf');cycle.innerHTML=b;
+ hands.setAttribute('aria-label',`游针 ${time} ${names[index]}时 ${images[index]}`);cycle.setAttribute('aria-label',`流转 ${time} ${names[index]}时 ${images[index]}`);
  slider.value=minutes;readout.textContent=time+' '+names[index]+'时';
 }
 function stop(){playing=false;cancelAnimationFrame(frame);play.textContent='加速播放';last=0}

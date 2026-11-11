@@ -31,6 +31,19 @@ fs.mkdirSync(output, { recursive: true });
     console.log('[step] Interactive dials, boundaries, play/pause');
     await page.goto(pathToFileURL(path.join(root, '动态表盘预览.html')).href);
     assert.equal(await page.locator('#readout').textContent(), '17:38 酉时');
+    const expectedBits = [1,3,7,15,31,63,62,60,56,48,32,0];
+    for (let index = 0; index < 12; index++) {
+      const time = (index * 120 + 1380) % 1440;
+      await page.locator('#time').evaluate((el, value) => { el.value = value; el.dispatchEvent(new Event('input', { bubbles: true })); }, time);
+      for (const id of ['hands', 'cycle']) {
+        assert.equal(await page.locator(`#${id} .hexagram`).count(), 12);
+        assert.equal(await page.locator(`#${id} .hexagram[data-current=true]`).count(), 1);
+        assert.equal(await page.locator(`#${id} .hexagram[data-current=true]`).getAttribute('data-index'), String(index));
+        assert.equal(await page.locator(`#${id} .hexagram[data-current=true]`).getAttribute('data-bits'), String(expectedBits[index]));
+        assert.equal(await page.locator(`#${id} .hexagram[data-current=true] [data-yang=true]`).count(), index < 6 ? index + 1 : 11 - index);
+        assert.equal(await page.locator(`#${id} .hexagram`).nth(index).locator('[data-line]').first().getAttribute('data-line'), '5');
+      }
+    }
     for (const [time, label] of [[1379, '22:59 亥时'], [1380, '23:00 子时'], [0, '00:00 子时'], [60, '01:00 丑时']]) {
       await page.locator('#time').evaluate((el, value) => { el.value = value; el.dispatchEvent(new Event('input', { bubbles: true })); }, time);
       assert.equal(await page.locator('#readout').textContent(), label);

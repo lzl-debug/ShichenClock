@@ -318,7 +318,11 @@ namespace ShichenClock {
         [DllImport("user32.dll")] static extern bool SetProcessDPIAware();
         [STAThread] public static void Main(string[] args) {
             SetProcessDPIAware();
-            if(args.Length>0&&args[0]=="--render") { Render(args.Length>1?args[1]:Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"previews"));return; }
+            if(args.Length>0&&args[0]=="--render") {
+                DateTime sample=new DateTime(2026,11,11,17,38,24);
+                if(args.Length>2)sample=sample.Date.Add(DateTime.ParseExact(args[2],"HH:mm",System.Globalization.CultureInfo.InvariantCulture).TimeOfDay);
+                Render(args.Length>1?args[1]:Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"previews"),sample);return;
+            }
             if(args.Length>0&&args[0]=="--self-test") {SelfTest();return;}
             if(args.Length>0&&args[0]=="--smoke-test") {
                 var testApp=new Application {ShutdownMode=ShutdownMode.OnMainWindowClose};var window=new ClockWindow(1,true);
@@ -335,10 +339,10 @@ namespace ShichenClock {
                 app.Run(new ClockWindow(theme));
             }
         }
-        private static void Render(string folder) {
+        private static void Render(string folder,DateTime sample) {
             Directory.CreateDirectory(folder);
             for(int i=0;i<ThemeInfo.All.Length;i++) {
-                var face=new ClockFace {Theme=i,Sample=ClockMoment.At(new DateTime(2026,11,11,17,38,24))};
+                var face=new ClockFace {Theme=i,Sample=ClockMoment.At(sample)};
                 face.Measure(new Size(360,340));face.Arrange(new Rect(0,0,360,340));face.UpdateLayout();
                 var bitmap=new RenderTargetBitmap(720,680,192,192,PixelFormats.Pbgra32);bitmap.Render(face);
                 var encoder=new PngBitmapEncoder();encoder.Frames.Add(BitmapFrame.Create(bitmap));
