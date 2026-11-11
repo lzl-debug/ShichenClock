@@ -1,11 +1,11 @@
-$ErrorActionPreference = 'Stop'
+﻿$ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Drawing
 $clockRoot = Split-Path -Parent $PSScriptRoot
 $sheet = New-Object System.Drawing.Bitmap 1440,1360
 $canvas = [System.Drawing.Graphics]::FromImage($sheet)
 $canvas.Clear([System.Drawing.ColorTranslator]::FromHtml('#E5E9EE'))
 $canvas.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
-for ($i=0; $i -lt 14; $i++) {
+for ($i=0; $i -lt 16; $i++) {
     $file = Join-Path $clockRoot ('previews\{0:00}.png' -f ($i+1))
     $img = [System.Drawing.Image]::FromFile($file)
     $canvas.DrawImage($img, [int](($i % 4)*360), [int]([Math]::Floor($i/4)*340), 360, 340)
@@ -23,6 +23,17 @@ for ($i=0; $i -lt 2; $i++) {
     $img.Dispose()
 }
 $pair.Save((Join-Path $clockRoot 'previews\new-dials.png'), [System.Drawing.Imaging.ImageFormat]::Png)
+$pairCanvas.Dispose()
+$pair.Dispose()
+$pair = New-Object System.Drawing.Bitmap 1440,680
+$pairCanvas = [System.Drawing.Graphics]::FromImage($pair)
+$pairCanvas.Clear([System.Drawing.ColorTranslator]::FromHtml('#E5E9EE'))
+for ($i=0; $i -lt 2; $i++) {
+    $img = [System.Drawing.Image]::FromFile((Join-Path $clockRoot ('previews\{0:00}.png' -f ($i+15))))
+    $pairCanvas.DrawImage($img, [int]($i*720), 0,720,680)
+    $img.Dispose()
+}
+$pair.Save((Join-Path $clockRoot 'previews\yijing-dials.png'), [System.Drawing.Imaging.ImageFormat]::Png)
 $pairCanvas.Dispose()
 $pair.Dispose()
 $icon = New-Object System.Drawing.Bitmap 256,256

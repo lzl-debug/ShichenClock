@@ -22,10 +22,12 @@ namespace ShichenClock {
             new ThemeInfo("刻度", "CHRONO", "精密腕表 · 石墨与玫瑰金", "#202122", "#EFE5DA", "#D5A18A", "#A69E96"),
             new ThemeInfo("浮光", "AURA", "柔和流体 · 杏桃与香芋", "#EFE4E4", "#675165", "#A77C9A", "#9B7F95"),
             new ThemeInfo("游针", "MERIDIAN", "地支指针 · 一日一周", "#E8E5DD", "#34443F", "#B56F4F", "#8C9388"),
-            new ThemeInfo("流转", "CYCLE", "环形时辰 · 逐格流动", "#1A2233", "#E5EAF7", "#A9B9EF", "#98A6BF")
+            new ThemeInfo("流转", "CYCLE", "环形时辰 · 逐格流动", "#1A2233", "#E5EAF7", "#A9B9EF", "#98A6BF"),
+            new ThemeInfo("消息", "TWELVE MESSAGES", "六爻时序 · 一时一卦", "#E3EDE4", "#34544B", "#A46845", "#718C7D"),
+            new ThemeInfo("玄枢", "EARLIER HEAVEN", "先天八卦 · 环行十二辰", "#28273E", "#EDE7DE", "#D5B78E", "#AAA0BC")
         };
     }
-    public sealed class ClockFace : FrameworkElement {
+    public sealed partial class ClockFace : FrameworkElement {
         public int Theme;
         public ClockMoment Sample;
         public string HiddenEdge;
@@ -63,7 +65,7 @@ namespace ShichenClock {
             base.OnRender(context);m=Sample??ClockMoment.Current();t=ThemeInfo.All[Theme];long second=m.Now.Ticks/TimeSpan.TicksPerSecond;
             if(cached==null||cachedTheme!=Theme||cachedSecond!=second) {
                 cached=new DrawingGroup();using(var c=cached.Open()) {d=c;Box(11,15,338,317,28,"#0A000000");Box(10,12,340,318,28,"#07000000");d.PushClip(new RectangleGeometry(new Rect(10,10,340,320),28,28));
-                    switch(Theme){case 0:Orbit();break;case 1:Celadon();break;case 2:Paper();break;case 3:Lacquer();break;case 4:Grove();break;case 5:Lunar();break;case 6:Analog();break;case 7:Blue();break;case 8:Matrix();break;case 9:Pure();break;case 10:Chrono();break;case 11:Aura();break;case 12:Meridian();break;case 13:Cycle();break;}
+                    switch(Theme){case 0:Orbit();break;case 1:Celadon();break;case 2:Paper();break;case 3:Lacquer();break;case 4:Grove();break;case 5:Lunar();break;case 6:Analog();break;case 7:Blue();break;case 8:Matrix();break;case 9:Pure();break;case 10:Chrono();break;case 11:Aura();break;case 12:Meridian();break;case 13:Cycle();break;case 14:Messages();break;case 15:BaguaDial();break;}
                     d.Pop();Box(10.5,10.5,339,319,27.5,null,"#16FFFFFF",.7);
                 }cached.Freeze();cachedTheme=Theme;cachedSecond=second;
             }

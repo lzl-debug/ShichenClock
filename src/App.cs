@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -63,7 +63,7 @@ namespace ShichenClock {
             toolbar.Opacity=0;
             MouseEnter+=(s,e)=>FadeTools(true);
             MouseLeave+=(s,e)=>FadeTools(false);
-            var themeBtn=ToolButton("◈","选择外观（共 14 套）"); themeBtn.Click+=(s,e)=>OpenChooser(); toolbar.Children.Add(themeBtn);
+            var themeBtn=ToolButton("◈","选择外观（共 16 套）"); themeBtn.Click+=(s,e)=>OpenChooser(); toolbar.Children.Add(themeBtn);
             pinButton=ToolButton("●","切换置顶"); pinButton.Click+=(s,e)=>{Topmost=!Topmost; RefreshButtons(); SaveSettings();}; toolbar.Children.Add(pinButton);
             var menuBtn=ToolButton("⋯","更多：吸附、大小、退出"); menuBtn.Click+=(s,e)=>ShowMenu(menuBtn); toolbar.Children.Add(menuBtn);
             root.Children.Add(toolbar); view.Child=root; Content=view;
@@ -126,7 +126,7 @@ namespace ShichenClock {
             tray.Icon=System.Drawing.Icon.ExtractAssociatedIcon(System.Reflection.Assembly.GetExecutingAssembly().Location);
             var cm=new Forms.ContextMenuStrip();
             cm.Items.Add("显示时钟",null,(s,e)=>Dispatcher.Invoke(new Action(BringBack)));
-            cm.Items.Add("选择 14 套外观",null,(s,e)=>Dispatcher.Invoke(new Action(OpenChooser)));
+            cm.Items.Add("选择 16 套外观",null,(s,e)=>Dispatcher.Invoke(new Action(OpenChooser)));
             cm.Items.Add("退出",null,(s,e)=>Dispatcher.Invoke(new Action(Quit)));
             tray.ContextMenuStrip=cm; tray.DoubleClick+=(s,e)=>Dispatcher.Invoke(new Action(BringBack));tray.Visible=true;
         }
@@ -238,7 +238,7 @@ namespace ShichenClock {
         private void ShowMenu(Button anchor) {
             Reveal(true);menuOpen=true;
             var cm=new ContextMenu();
-            cm.Items.Add(Item("选择外观 · 14 套",OpenChooser));
+            cm.Items.Add(Item("选择外观 · 16 套",OpenChooser));
             var always=Item("始终置顶",()=>{Topmost=!Topmost;RefreshButtons();SaveSettings();});always.IsCheckable=true;always.IsChecked=Topmost;cm.Items.Add(always);
             var hide=Item("贴边自动隐藏",()=>{autoHide=!autoHide;if(!autoHide)Reveal();SaveSettings();});hide.IsCheckable=true;hide.IsChecked=autoHide;cm.Items.Add(hide);
             var size=new MenuItem {Header="时钟大小"};
@@ -246,6 +246,7 @@ namespace ShichenClock {
             var edges=new MenuItem {Header="吸附到屏幕边缘"};
             string[] labels={"左边","右边","上边","下边"};for(int n=0;n<4;n++){int side=n;edges.Items.Add(Item(labels[n],()=>DockAt(side)));}cm.Items.Add(edges);
             cm.Items.Add(Item("打开全部风格预览",()=>System.Diagnostics.Process.Start(Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"风格预览.html"))));
+            cm.Items.Add(Item("八卦与时辰 · 看懂卦象",()=>System.Diagnostics.Process.Start(Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"易象预览.html"))));
             cm.Items.Add(new Separator());cm.Items.Add(Item("退出",Quit));
             cm.Closed+=(s,e)=>{menuOpen=false;lastInside=DateTime.UtcNow;};cm.PlacementTarget=anchor??(FrameworkElement)this;cm.IsOpen=true;
         }
@@ -258,7 +259,7 @@ namespace ShichenClock {
         public void VerifyDesktop() {
             var report=new List<string>();
             for(int i=0;i<ThemeInfo.All.Length;i++){SetTheme(i);UpdateLayout();if(face.Theme!=i)throw new Exception("Theme selection failed");}
-            report.Add("PASS: all 14 native themes switched.");
+            report.Add("PASS: all 16 native themes switched.");
             foreach(double value in new[]{.8,1.0,1.2}) {
                 scale=value;Width=360*scale;Height=340*scale;UpdateLayout();
                 for(int side=0;side<4;side++) {
@@ -296,9 +297,9 @@ namespace ShichenClock {
         private void Quit() {Reveal(true);SaveSettings();Close();}
         private void OpenChooser() {
             Reveal(true);if(chooser!=null){chooser.Activate();return;}
-            chooser=new Window {Title="拾辰 · 十四种时间的样子",Width=1000,Height=760,MinWidth=560,MinHeight=500,Background=ClockFace.Brush("#EEF1F4"),WindowStartupLocation=WindowStartupLocation.CenterScreen,Topmost=Topmost};
+            chooser=new Window {Title="拾辰 · 十六种时间的样子",Width=1000,Height=760,MinWidth=560,MinHeight=500,Background=ClockFace.Brush("#EEF1F4"),WindowStartupLocation=WindowStartupLocation.CenterScreen,Topmost=Topmost};
             var outer=new DockPanel {Margin=new Thickness(24)};
-            var title=new TextBlock {Text="拾辰 / 十四种时间的样子",FontSize=27,Foreground=ClockFace.Brush("#263B4C"),Margin=new Thickness(4,0,0,8)};DockPanel.SetDock(title,Dock.Top);outer.Children.Add(title);
+            var title=new TextBlock {Text="拾辰 / 十六种时间的样子",FontSize=27,Foreground=ClockFace.Brush("#263B4C"),Margin=new Thickness(4,0,0,8)};DockPanel.SetDock(title,Dock.Top);outer.Children.Add(title);
             var subtitle=new TextBlock {Text="点击一款，即刻换装。拖动时钟到屏幕边缘，移开鼠标后自动收起。",Foreground=ClockFace.Brush("#647584"),FontSize=13,Margin=new Thickness(4,0,0,20),TextWrapping=TextWrapping.Wrap};DockPanel.SetDock(subtitle,Dock.Top);outer.Children.Add(subtitle);
             var wrap=new WrapPanel();var scroller=new ScrollViewer {VerticalScrollBarVisibility=ScrollBarVisibility.Auto,HorizontalScrollBarVisibility=ScrollBarVisibility.Disabled,Content=wrap};outer.Children.Add(scroller);
             for(int n=0;n<ThemeInfo.All.Length;n++) {
@@ -371,6 +372,21 @@ namespace ShichenClock {
                 if(begin.Index!=i||begin.Progress!=0||end.Progress<.999||next.Index!=(i+1)%12||next.Progress!=0)throw new Exception("Ring segment boundary "+i);
             }
             report.Add("PASS: 24-hour hand angles, minute hand angles, 12 ring segment transitions including 23:00 reset.");
+            string[] expectedNames={"复","临","泰","大壮","夬","乾","姤","遁","否","观","剥","坤"};
+            int[] expectedNumbers={24,19,11,34,43,1,44,33,12,20,23,2};
+            for(int i=0;i<12;i++) {
+                int hour=(i*2+23)%24;var begin=ClockMoment.At(new DateTime(2026,1,1,hour,0,0));
+                var hex=Yijing.At(begin);int count=0;
+                for(int line=0;line<6;line++)if(hex.Yang(line))count++;
+                if(hex.Name!=expectedNames[i]||hex.Number!=expectedNumbers[i]||count!=(i<6?i+1:11-i))throw new Exception("Message hexagram mapping "+i);
+                int changed=Yijing.ChangingLine(i);
+                if(changed!=(i+1)%6)throw new Exception("Changing line "+i);
+                if(Math.Abs(Yijing.DayProgress(begin)-i/12.0)>.00001)throw new Exception("Yijing day boundary");
+            }
+            if(!Yijing.Cycle[0].Yang(0)||Yijing.Cycle[0].Yang(5)||!Yijing.Cycle[10].Yang(5)||Yijing.Cycle[10].Yang(0))throw new Exception("Hexagram bottom-to-top orientation");
+            if(Yijing.EarlierHeaven[0]!=7||Yijing.EarlierHeaven[2]!=2||Yijing.EarlierHeaven[4]!=0||Yijing.EarlierHeaven[6]!=5)throw new Exception("Earlier Heaven cardinal placement");
+            var trigrams=new HashSet<int>(Yijing.EarlierHeaven);if(trigrams.Count!=8)throw new Exception("Eight distinct trigrams");
+            report.Add("PASS: 12 message hexagram names/numbers, yin-yang counts, bottom-to-top lines, single-line transitions, 23:00 cycle, Earlier Heaven placement.");
             report.Add("PASS: 24 hour boundaries, midnight wrap, 8 quarter boundaries. All time calculations use UTC+8.");
             File.WriteAllLines(Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"test-results.txt"),report,Encoding.UTF8);
         }
